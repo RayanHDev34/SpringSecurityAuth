@@ -75,6 +75,9 @@ public class RentalController {
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> createRental(
+            @Parameter(description = "Identifiant du propriétaire", example = "1")
+            @RequestParam("owner_id") Long ownerId,
+
             @Parameter(description = "Nom de la location", example = "Appartement T3 à Montpellier")
             @RequestParam("name") String name,
 
@@ -90,7 +93,7 @@ public class RentalController {
             @Parameter(description = "Image principale de la location (facultative)")
             @RequestParam(value = "picture", required = false) MultipartFile picture
     ) {
-        return rentalService.createRental(name, description, price, surface, picture);
+        return rentalService.createRental(ownerId, name, description, price, surface, picture);
     }
 
     @Operation(

@@ -29,6 +29,7 @@ public class RentalService {
         List<Map<String, Object>> response = rentals.stream().map(rental -> {
             Map<String, Object> rentalData = new HashMap<>();
             rentalData.put("id", rental.getId());
+            rentalData.put("owner_id", rental.getOwnerId());
             rentalData.put("name", rental.getName());
             rentalData.put("description", rental.getDescription());
             rentalData.put("price", rental.getPrice());
@@ -88,6 +89,7 @@ public class RentalService {
     }
 
     public ResponseEntity<Map<String, String>>  createRental(
+            Long ownerId,
             String name,
             String description,
             double price,
@@ -95,6 +97,7 @@ public class RentalService {
             MultipartFile picture) {
 
         Rental rental = new Rental();
+        rental.setOwnerId(ownerId);
         rental.setName(name);
         rental.setDescription(description);
         rental.setPrice(price);
