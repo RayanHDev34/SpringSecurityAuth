@@ -5,7 +5,6 @@ import com.example.SpringSecurityAuth.services.MessageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -29,23 +28,18 @@ public class MessageController {
 
     @Operation(
             summary = "Envoyer un message concernant une location",
-            description = "Permet à un utilisateur connecté d’envoyer un message au propriétaire d’une location.",
-            requestBody = @RequestBody(
-                    required = true,
-                    description = "Corps de la requête contenant les informations du message",
-                    content = @Content(schema = @Schema(implementation = MessageRequest.class))
-            )
+            description = "Permet à un utilisateur authentifié d’envoyer un message lié à une location."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Message envoyé avec succès."),
             @ApiResponse(responseCode = "400", description = "Requête invalide."),
             @ApiResponse(responseCode = "401", description = "Non autorisé — token manquant ou invalide.")
     })
+
     @PostMapping
     public ResponseEntity<Map<String, String>> createMessage(@RequestBody MessageRequest request) {
         return messageService.createMessage(Map.of(
-                "name", request.getName(),
-                "email", request.getEmail(),
+                "user_id", request.getUser_id(),
                 "message", request.getMessage(),
                 "rental_id", request.getRental_id()
         ));
