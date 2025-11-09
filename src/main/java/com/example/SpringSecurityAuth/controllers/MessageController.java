@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,11 +38,19 @@ public class MessageController {
     })
 
     @PostMapping
-    public ResponseEntity<Map<String, String>> createMessage(@RequestBody MessageRequest request) {
-        return messageService.createMessage(Map.of(
-                "user_id", request.getUser_id(),
-                "message", request.getMessage(),
-                "rental_id", request.getRental_id()
-        ));
+    public ResponseEntity<Map<String, String>> createMessage(
+            @RequestBody MessageRequest request
+    ) {
+        try {
+            messageService.createMessage(request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("message", "Message sent successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to send message: " + e.getMessage()));
+        }
     }
 }

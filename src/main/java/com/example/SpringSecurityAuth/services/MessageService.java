@@ -1,7 +1,9 @@
 package com.example.SpringSecurityAuth.services;
 
+import com.example.SpringSecurityAuth.dto.MessageRequest;
 import com.example.SpringSecurityAuth.entities.Message;
 import com.example.SpringSecurityAuth.entities.User;
+import com.example.SpringSecurityAuth.mapper.MessageMapper;
 import com.example.SpringSecurityAuth.repositories.MessageRepository;
 import com.example.SpringSecurityAuth.repositories.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -22,21 +24,12 @@ public class MessageService {
         this.messageRepository = messageRepository;
     }
 
-    public ResponseEntity<Map<String, String>> createMessage(Map<String, Object> json) {
-        Long rentalId = Long.valueOf(json.get("rental_id").toString());
-        Long userId = Long.valueOf(json.get("user_id").toString());
-        String messageText = json.get("message").toString();
+    public void createMessage(MessageRequest request) {
+        // Vérifie que les IDs sont présents
+        // Map DTO → Entity
+        Message message = MessageMapper.fromRequest(request);
 
-        Message message = new Message();
-        message.setRentalId(rentalId);
-        message.setUserId(userId);
-        message.setMessage(messageText);
-
+        // Sauvegarde en base
         messageRepository.save(message);
-
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Message send with success");
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
