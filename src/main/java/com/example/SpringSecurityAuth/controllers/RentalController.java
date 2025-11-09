@@ -1,5 +1,7 @@
 package com.example.SpringSecurityAuth.controllers;
 
+import com.example.SpringSecurityAuth.dto.RentalRequest;
+import com.example.SpringSecurityAuth.dto.RentalResponse;
 import com.example.SpringSecurityAuth.services.RentalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -10,8 +12,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,8 +43,9 @@ public class RentalController {
             @ApiResponse(responseCode = "401", description = "Non autorisé — token manquant ou invalide.")
     })
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> getAllRentals() {
-        return rentalService.getAllRentals();
+    public ResponseEntity<List<RentalResponse>> getAllRentals() {
+        List<RentalResponse> rentalResponseList = rentalService.getAllRentals();
+        return  ResponseEntity.ok(rentalResponseList);
     }
 
     @Operation(
@@ -53,10 +58,11 @@ public class RentalController {
             @ApiResponse(responseCode = "401", description = "Non autorisé — token manquant ou invalide.")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getRentalById(
+    public ResponseEntity<RentalResponse> getRentalById(
             @Parameter(description = "ID de la location à récupérer", example = "1")
             @PathVariable Long id) {
-        return rentalService.getRentalById(id);
+        RentalResponse rentalResponse = rentalService.getRentalById(id);
+        return ResponseEntity.ok(rentalResponse);
     }
 
     @Operation(
@@ -73,27 +79,20 @@ public class RentalController {
             @ApiResponse(responseCode = "400", description = "Requête invalide ou champs manquants."),
             @ApiResponse(responseCode = "401", description = "Non autorisé — token manquant ou invalide.")
     })
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> createRental(
-            @Parameter(description = "Identifiant du propriétaire", example = "1")
-            @RequestParam("owner_id") Long ownerId,
-
-            @Parameter(description = "Nom de la location", example = "Appartement T3 à Montpellier")
-            @RequestParam("name") String name,
-
-            @Parameter(description = "Description de la location", example = "Appartement lumineux avec terrasse et garage.")
-            @RequestParam("description") String description,
-
-            @Parameter(description = "Prix mensuel de la location", example = "850")
-            @RequestParam("price") double price,
-
-            @Parameter(description = "Surface du logement en m²", example = "75")
-            @RequestParam("surface") double surface,
-
-            @Parameter(description = "Image principale de la location (facultative)")
-            @RequestParam(value = "picture", required = false) MultipartFile picture
-    ) {
-        return rentalService.createRental(ownerId, name, description, price, surface, picture);
+            @AuthenticationPrincipal String email,
+            RentalRequest rentalRequest)
+    {
+        try {
+            rentalService.createRental(email, rentalRequest);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("message", "Rental created successfully!"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to create rental: " + e.getMessage()));
+        }
     }
 
     @Operation(
@@ -115,22 +114,18 @@ public class RentalController {
     public ResponseEntity<Map<String, String>> updateRental(
             @Parameter(description = "ID de la location à modifier", example = "3")
             @PathVariable Long id,
-
-            @Parameter(description = "Nom de la location", example = "Studio rénové centre-ville")
-            @RequestParam("name") String name,
-
-            @Parameter(description = "Description de la location", example = "Studio tout équipé proche de la gare.")
-            @RequestParam("description") String description,
-
-            @Parameter(description = "Prix mensuel de la location", example = "650")
-            @RequestParam("price") double price,
-
-            @Parameter(description = "Surface du logement en m²", example = "30")
-            @RequestParam("surface") double surface,
-
-            @Parameter(description = "Nouvelle image (facultative)")
-            @RequestParam(value = "picture", required = false) MultipartFile picture
-    ) {
-        return rentalService.updateRental(id, name, description, price, surface, picture);
+            RentalRequest rentalRequest)
+     {
+         try {
+             rentalService.updateRental(id, rentalRequest);
+             return ResponseEntity.status(HttpStatus.OK)
+                     .body(Map.of("message", "Rental updated successfully!"));
+         } catch (RuntimeException e) {
+             return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                     .body(Map.of("error", e.getMessage()));
+         } catch (Exception e) {
+             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                     .body(Map.of("error", "Failed to update rental: " + e.getMessage()));
+         }
     }
 }
