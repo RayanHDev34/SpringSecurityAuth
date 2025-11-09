@@ -2,12 +2,15 @@ package com.example.SpringSecurityAuth.controllers;
 
 import com.example.SpringSecurityAuth.dto.LoginRequest;
 import com.example.SpringSecurityAuth.dto.RegisterRequest;
+import com.example.SpringSecurityAuth.dto.TokenResponse;
+import com.example.SpringSecurityAuth.dto.UserResponse;
 import com.example.SpringSecurityAuth.services.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -37,11 +40,17 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Requête mal formée.")
     })
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest request) {
-        return authService.login(Map.of(
-                "email", request.getEmail(),
-                "password", request.getPassword()
-        ));
+    public  ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            TokenResponse tokenResponse = authService.login(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(tokenResponse);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "An unexpected error occurred"));
+        }
     }
 
     @Operation(
@@ -53,12 +62,17 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Erreur de validation ou données manquantes.")
     })
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@RequestBody RegisterRequest request) {
-        return authService.register(Map.of(
-                "name", request.getName(),
-                "email", request.getEmail(),
-                "password", request.getPassword()
-        ));
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        try {
+            TokenResponse tokenResponse = authService.register(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(tokenResponse);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "An unexpected error occurred"));
+        }
     }
 
     @Operation(
@@ -73,7 +87,8 @@ public class AuthController {
     })
     @GetMapping("/me")
     @SecurityRequirement(name = "bearerAuth")
-    public ResponseEntity<Map<String, Object>> getCurrentUser(@AuthenticationPrincipal String name) {
-        return authService.getCurrentUser(name);
+    public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal String email) {
+        UserResponse response =  authService.getCurrentUser(email);
+        return ResponseEntity.ok(response);
     }
 }

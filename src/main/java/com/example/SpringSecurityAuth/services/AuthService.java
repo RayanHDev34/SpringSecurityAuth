@@ -1,15 +1,14 @@
 package com.example.SpringSecurityAuth.services;
 
+import com.example.SpringSecurityAuth.dto.LoginRequest;
+import com.example.SpringSecurityAuth.dto.RegisterRequest;
+import com.example.SpringSecurityAuth.dto.TokenResponse;
+import com.example.SpringSecurityAuth.dto.UserResponse;
 import com.example.SpringSecurityAuth.entities.User;
+import com.example.SpringSecurityAuth.mapper.UserMapper;
 import com.example.SpringSecurityAuth.repositories.UserRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 public class AuthService {
@@ -24,63 +23,35 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
-    public ResponseEntity<Map<String, String>> login(Map<String, String> body) {
-        String email = body.get("email");
-        String password = body.get("password");
+    public TokenResponse login(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() ->  new IllegalArgumentException("Invalid credentials"));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Invalid credentials");
+        }
+
+        String token = jwtService.generateToken(user);
+        return new TokenResponse(token);
+    }
+
+    public TokenResponse register(RegisterRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already exists");
+        }
+        User user = UserMapper.fromRegisterRequest(request);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        userRepository.save(user);
+
+        String token = jwtService.generateToken(user);
+        return new TokenResponse(token);
+    }
+
+    public UserResponse getCurrentUser(String email) {
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
-
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Invalid credentials");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-
-        String token = jwtService.generateToken(user);
-
-        Map<String, String> response = new HashMap<>();
-        response.put("token", token);
-        return ResponseEntity.ok(response);
-    }
-
-    public ResponseEntity<Map<String, String>> register(Map<String, String> body) {
-        String email = body.get("email");
-        String name = body.get("name");
-        String password = body.get("password");
-
-        if (userRepository.findByEmail(email).isPresent()) {
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Email already exists");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-
-        User user = new User();
-        user.setEmail(email);
-        user.setName(name);
-        user.setPassword(passwordEncoder.encode(password));
-
-        userRepository.save(user);
-        String token = jwtService.generateToken(user);
-
-        Map<String, String> response = new HashMap<>();
-        response.put("token", token);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    public ResponseEntity<Map<String, Object>> getCurrentUser(String name) {
-
-        User user = userRepository.findByName(name)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", user.getId());
-        response.put("name", user.getName());
-        response.put("email", user.getEmail());
-        response.put("created_at", user.getCreatedAt());
-        response.put("updated_at", user.getUpdatedAt());
-
-        return ResponseEntity.ok(response);
+        UserResponse response = UserMapper.toDto(user);
+        return response;
     }
 }
