@@ -1,9 +1,12 @@
 package com.example.SpringSecurityAuth.services;
 
+import com.example.SpringSecurityAuth.dto.UserResponse;
+import com.example.SpringSecurityAuth.entities.User;
+import com.example.SpringSecurityAuth.mapper.UserMapper;
 import com.example.SpringSecurityAuth.repositories.UserRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -14,12 +17,15 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public ResponseEntity<?> getUserById(Long id) {
-        return userRepository.findById(id)
-                .<ResponseEntity<?>>map(ResponseEntity::ok)
-                .orElseGet(() ->
-                        ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                .body("{\"message\": \"User not found\"}")
-                );
+    public UserResponse getUserById(Long id) {
+        Optional<User> optionalUser = userRepository.findById(id);
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get(); // ✅ récupération du User
+            return UserMapper.toDto(user);
+
+        } else {
+            return new UserResponse(); // ✅ UserResponse vide
+        }
+
     }
 }

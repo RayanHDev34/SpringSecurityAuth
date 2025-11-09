@@ -1,10 +1,9 @@
 package com.example.SpringSecurityAuth.controllers;
 
+import com.example.SpringSecurityAuth.dto.UserResponse;
 import com.example.SpringSecurityAuth.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -34,9 +33,10 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Non autorisé — token manquant ou invalide.")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<?> getUserById(
+    public ResponseEntity<UserResponse> getUserById(
             @Parameter(description = "Identifiant unique de l'utilisateur", example = "5")
             @PathVariable Long id) {
-        return userService.getUserById(id);
+        UserResponse userResponse = userService.getUserById(id);
+        return ResponseEntity.ok(userResponse);
     }
 }
