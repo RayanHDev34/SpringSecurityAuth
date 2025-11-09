@@ -37,16 +37,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         final String jwt = authHeader.substring(7);
-        final String name = jwtService.extractUsername(jwt); // 👈 ici tu récupères ton "name"
+        final String email = jwtService.extractEmail(jwt);
 
-        if (name != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(
-                            name, // 👈 on met juste le nom dans le principal
+                            email,
                             null,
-                            List.of()
-                    );
-
+                            List.of());
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authToken);
         }
